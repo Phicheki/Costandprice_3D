@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="เครื่องคำนวณต้นทุนและราคางาน 3D Print สำหรับ Bambu Lab P2S" />
+  <title>3D Print Cost & Pricing Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">🖨️</span>
+          <h1>3D Print Calculator</h1>
+        </div>
+        <p class="subtitle">Bambu Lab P2S — Cost & Pricing</p>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="calculator" id="tab-calculator">
+        <span class="tab-icon">🧮</span>
+        <span>คำนวณราคา</span>
+      </button>
+      <button class="tab-btn" data-tab="settings" id="tab-settings">
+        <span class="tab-icon">⚙️</span>
+        <span>ตั้งค่า</span>
+      </button>
+    </nav>
+
+    <!-- Page Content -->
+    <main id="page-content" class="page-content">
+      <!-- Dynamic content injected here -->
+    </main>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
