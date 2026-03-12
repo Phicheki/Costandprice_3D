@@ -83,7 +83,7 @@ export function renderSettingsPage() {
       </div>
 
       <div class="setting-item">
-        <label>% โสหุ้ย (Overhead)</label>
+        <label>% ต้นทุนแฝง (Overhead)</label>
         <input type="number" id="set-overhead" value="${s.overheadPercent}" min="0" max="100" step="1" />
       </div>
     </div>

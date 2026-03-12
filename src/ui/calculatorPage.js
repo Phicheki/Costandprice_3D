@@ -35,6 +35,12 @@ export function renderCalculatorPage() {
           <input type="number" id="inp-time" placeholder="เช่น 2.5" min="0" step="0.01" />
         </div>
       </div>
+
+      <div class="form-group">
+        <label>จำนวนชิ้น</label>
+        <input type="number" id="inp-quantity" placeholder="1" min="1" step="1" value="1" />
+        <div class="hint">น้ำหนักและเวลาปริ้น = ต่อ 1 ชิ้น / ค่าปั้นแบบ & Slicing จะเฉลี่ยต่อชิ้น</div>
+      </div>
     </div>
 
     <!-- Labor Inputs -->
@@ -92,6 +98,7 @@ function handleCalculate() {
     const filamentId = document.getElementById('inp-filament').value;
     const weightGrams = parseFloat(document.getElementById('inp-weight').value) || 0;
     const printTimeHours = parseFloat(document.getElementById('inp-time').value) || 0;
+    const quantity = parseInt(document.getElementById('inp-quantity').value) || 1;
     const modelingHours = parseFloat(document.getElementById('inp-modeling').value) || 0;
     const slicingMinutes = parseFloat(document.getElementById('inp-slicing').value) || 0;
     const postProcessHours = parseFloat(document.getElementById('inp-postprocess').value) || 0;
@@ -101,21 +108,35 @@ function handleCalculate() {
         return;
     }
 
-    const input = { filamentId, weightGrams, printTimeHours, modelingHours, slicingMinutes, postProcessHours };
+    const input = { filamentId, weightGrams, printTimeHours, quantity, modelingHours, slicingMinutes, postProcessHours };
     const breakdown = calculateCost(input, settings);
     const pricing = calculatePricing(breakdown.totalCost, settings.tiers);
 
-    renderResults(breakdown, pricing, settings);
+    renderResults(breakdown, pricing, settings, quantity);
 }
 
-function renderResults(breakdown, pricing, settings) {
+function renderResults(breakdown, pricing, settings, quantity = 1) {
     const container = document.getElementById('results-container');
     container.style.display = 'block';
+
+    const showQuantity = quantity > 1;
+
+    // Quantity summary badge
+    const quantityBadge = showQuantity ? `
+      <div class="quantity-badge">
+        <span>📦 ${quantity} ชิ้น</span>
+        <span class="quantity-divider">|</span>
+        <span>ต่อชิ้น ${formatBaht(breakdown.perUnitCost)}</span>
+        <span class="quantity-divider">|</span>
+        <span>รวม ${formatBaht(breakdown.totalCost)}</span>
+      </div>
+    ` : '';
 
     // Cost Breakdown
     document.getElementById('result-breakdown').innerHTML = `
     <div class="glass-card result-section">
-      <h2><span class="card-icon">📊</span> สรุปต้นทุน</h2>
+      <h2><span class="card-icon">📊</span> สรุปต้นทุน${showQuantity ? ` (${quantity} ชิ้น)` : ''}</h2>
+      ${quantityBadge}
       <ul class="cost-breakdown">
         <li class="cost-item">
           <span class="cost-label"><span>📦</span> ค่าวัสดุ (รวมเผื่อเสีย ${settings.materialLossPercent}%)</span>
@@ -134,11 +155,11 @@ function renderResults(breakdown, pricing, settings) {
           <span class="cost-value">${formatBaht(breakdown.maintenanceCost)}</span>
         </li>
         <li class="cost-item">
-          <span class="cost-label"><span>🎨</span> ค่าปั้นแบบ</span>
+          <span class="cost-label"><span>🎨</span> ค่าปั้นแบบ${showQuantity ? ' (คงที่)' : ''}</span>
           <span class="cost-value">${formatBaht(breakdown.modelingCost)}</span>
         </li>
         <li class="cost-item">
-          <span class="cost-label"><span>🖥️</span> ค่า Slicing</span>
+          <span class="cost-label"><span>🖥️</span> ค่า Slicing${showQuantity ? ' (คงที่)' : ''}</span>
           <span class="cost-value">${formatBaht(breakdown.slicingCost)}</span>
         </li>
         <li class="cost-item">
@@ -146,18 +167,24 @@ function renderResults(breakdown, pricing, settings) {
           <span class="cost-value">${formatBaht(breakdown.postProcessCost)}</span>
         </li>
         <li class="cost-item">
-          <span class="cost-label"><span>🏢</span> ค่าโสหุ้ย (${settings.overheadPercent}%)</span>
+          <span class="cost-label"><span>🏢</span> ต้นทุนแฝง (${settings.overheadPercent}%)</span>
           <span class="cost-value">${formatBaht(breakdown.overheadCost)}</span>
         </li>
       </ul>
       <div class="cost-total">
-        <span class="cost-label">💰 ต้นทุนรวม</span>
+        <span class="cost-label">💰 ต้นทุนรวม${showQuantity ? ` (${quantity} ชิ้น)` : ''}</span>
         <span class="cost-value">${formatBaht(breakdown.totalCost)}</span>
       </div>
+      ${showQuantity ? `
+      <div class="cost-per-unit">
+        <span class="cost-label">📌 ต้นทุนต่อชิ้น</span>
+        <span class="cost-value">${formatBaht(breakdown.perUnitCost)}</span>
+      </div>
+      ` : ''}
     </div>
   `;
 
-    // Pricing Tiers
+    // Pricing Tiers — use perUnitCost for per-piece pricing
     const tierMeta = {
         economy: { name: 'ECONOMY', thai: 'ราคามิตรภาพ', class: 'economy' },
         standard: { name: 'STANDARD', thai: 'ราคามาตรฐาน', class: 'standard' },
@@ -165,23 +192,27 @@ function renderResults(breakdown, pricing, settings) {
         premium: { name: 'PREMIUM', thai: 'คุณภาพสูง', class: 'premium' },
     };
 
+    // Calculate per-unit pricing for tiers
+    const perUnitPricing = calculatePricing(breakdown.perUnitCost, settings.tiers);
+
     let tierHTML = '';
     for (const [key, meta] of Object.entries(tierMeta)) {
-        const p = pricing[key];
+        const p = perUnitPricing[key];
         tierHTML += `
       <div class="tier-card ${meta.class}">
         <div class="tier-name">${meta.name}</div>
         <div class="tier-thai">${meta.thai}</div>
         <div class="tier-price">${formatBahtRound(p.recommended)}</div>
-        <div class="tier-unit">บาท</div>
+        <div class="tier-unit">บาท/ชิ้น</div>
         <div class="tier-margin">${formatBahtRound(p.min)} — ${formatBahtRound(p.max)}</div>
+        ${showQuantity ? `<div class="tier-total">รวม ${quantity} ชิ้น = ${formatBahtRound(p.recommended * quantity)}</div>` : ''}
       </div>
     `;
     }
 
     document.getElementById('result-pricing').innerHTML = `
     <div class="glass-card result-section">
-      <h2><span class="card-icon">💲</span> ราคาขายแนะนำ</h2>
+      <h2><span class="card-icon">💲</span> ราคาขายแนะนำ${showQuantity ? ' (ต่อชิ้น)' : ''}</h2>
       <div class="tier-grid">
         ${tierHTML}
       </div>

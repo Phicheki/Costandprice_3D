@@ -381,6 +381,54 @@ select option {
   background-clip: text;
 }
 
+/* --- Quantity Display --- */
+.quantity-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.quantity-divider {
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.cost-per-unit {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0 0;
+  margin-top: 4px;
+  font-size: 0.9rem;
+}
+
+.cost-per-unit .cost-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.cost-per-unit .cost-value {
+  font-weight: 700;
+  color: var(--text-accent);
+}
+
+.tier-total {
+  font-size: 0.7rem;
+  color: var(--text-accent);
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-weight: 600;
+}
+
 /* --- Pricing Tiers --- */
 .tier-grid {
   display: grid;
@@ -478,7 +526,8 @@ select option {
   margin-bottom: 4px;
 }
 
-.setting-item .hint {
+.setting-item .hint,
+.form-group .hint {
   font-size: 0.7rem;
   color: var(--text-muted);
   margin-top: 2px;

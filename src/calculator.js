@@ -22,31 +22,38 @@ export function calculateCost(input, settings) {
     const filament = settings.filaments.find(f => f.id === input.filamentId)
         || settings.filaments[0];
 
-    // A. Direct Costs
-    // 1. Material cost
+    const quantity = input.quantity || 1;
+
+    // A. Direct Costs (per piece, then × quantity)
+    // 1. Material cost per piece
     const pricePerGram = filament.pricePerRoll / filament.weightPerRoll;
-    const materialCost = pricePerGram * input.weightGrams * (1 + settings.materialLossPercent / 100);
+    const materialCostPerPiece = pricePerGram * input.weightGrams * (1 + settings.materialLossPercent / 100);
+    const materialCost = materialCostPerPiece * quantity;
 
-    // 2. Electricity cost
+    // 2. Electricity cost per piece
     const totalWattage = settings.printerWattage + settings.dryerWattage;
-    const electricityCost = (totalWattage / 1000) * input.printTimeHours * settings.electricityRate;
+    const electricityCostPerPiece = (totalWattage / 1000) * input.printTimeHours * settings.electricityRate;
+    const electricityCost = electricityCostPerPiece * quantity;
 
-    // 3. Depreciation cost
+    // 3. Depreciation cost per piece
     const depreciationRate = settings.printerPrice / settings.printerLifetimeHours;
-    const depreciationCost = depreciationRate * input.printTimeHours;
+    const depreciationCostPerPiece = depreciationRate * input.printTimeHours;
+    const depreciationCost = depreciationCostPerPiece * quantity;
 
-    // 4. Maintenance cost
-    const maintenanceCost = settings.maintenanceCostPerHour * input.printTimeHours;
+    // 4. Maintenance cost per piece
+    const maintenanceCostPerPiece = settings.maintenanceCostPerHour * input.printTimeHours;
+    const maintenanceCost = maintenanceCostPerPiece * quantity;
 
-    // B. Labor Costs
-    // 5. Modeling cost
+    // B. Labor Costs (fixed — shared across all pieces)
+    // 5. Modeling cost (fixed)
     const modelingCost = input.modelingHours * settings.laborRatePerHour;
 
-    // 6. Slicing cost
+    // 6. Slicing cost (fixed)
     const slicingCost = (input.slicingMinutes / 60) * settings.laborRatePerHour;
 
-    // 7. Post-Processing cost
-    const postProcessCost = input.postProcessHours * settings.laborRatePerHour;
+    // 7. Post-Processing cost (per piece × quantity)
+    const postProcessCostPerPiece = input.postProcessHours * settings.laborRatePerHour;
+    const postProcessCost = postProcessCostPerPiece * quantity;
 
     // Sum of items 1-7
     const subtotal = materialCost + electricityCost + depreciationCost
@@ -59,6 +66,9 @@ export function calculateCost(input, settings) {
     // Total
     const totalCost = subtotal + overheadCost;
 
+    // Per unit cost
+    const perUnitCost = totalCost / quantity;
+
     return {
         materialCost,
         electricityCost,
@@ -69,6 +79,8 @@ export function calculateCost(input, settings) {
         postProcessCost,
         overheadCost,
         totalCost,
+        perUnitCost,
+        quantity,
     };
 }
 
