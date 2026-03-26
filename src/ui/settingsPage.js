@@ -139,9 +139,7 @@ export function renderSettingsPage() {
 
     <!-- Actions -->
     <div class="settings-actions">
-      <button class="btn btn-primary btn-full" id="btn-save-settings">
-        💾 บันทึกการตั้งค่า
-      </button>
+      <div class="auto-save-status" id="auto-save-status">✅ บันทึกอัตโนมัติ</div>
       <button class="btn btn-danger" id="btn-reset-settings">
         🔄 รีเซ็ต
       </button>
@@ -176,11 +174,31 @@ function renderFilamentCard(f, index, totalCount) {
   `;
 }
 
+/** Debounce helper */
+let autoSaveTimer = null;
+function debouncedAutoSave() {
+    // Only auto-save if we're on the settings page
+    if (!document.getElementById('btn-reset-settings')) return;
+
+    const status = document.getElementById('auto-save-status');
+    if (status) {
+        status.textContent = '⏳ กำลังบันทึก...';
+        status.classList.remove('saved');
+        status.classList.add('saving');
+    }
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+        handleSave(true);
+        if (status) {
+            status.textContent = '✅ บันทึกอัตโนมัติแล้ว';
+            status.classList.remove('saving');
+            status.classList.add('saved');
+        }
+    }, 500);
+}
+
 /** Bind event listeners */
 export function initSettingsPage() {
-    // Save
-    document.getElementById('btn-save-settings')?.addEventListener('click', handleSave);
-
     // Reset
     document.getElementById('btn-reset-settings')?.addEventListener('click', handleReset);
 
@@ -191,6 +209,13 @@ export function initSettingsPage() {
     document.querySelectorAll('.btn-delete-filament').forEach(btn => {
         btn.addEventListener('click', handleDeleteFilament);
     });
+
+    // Auto-save on any input change
+    const container = document.getElementById('page-content');
+    if (container) {
+        container.addEventListener('input', debouncedAutoSave);
+        container.addEventListener('change', debouncedAutoSave);
+    }
 }
 
 function handleSave() {

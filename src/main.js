@@ -1,11 +1,7 @@
-/**
- * Main Entry Point
- * Handles tab switching and page rendering.
- */
-
 import './style.css';
 import { renderCalculatorPage, initCalculatorPage } from './ui/calculatorPage.js';
 import { renderSettingsPage, initSettingsPage } from './ui/settingsPage.js';
+import { renderHistoryPage, initHistoryPage } from './ui/historyPage.js';
 
 const pageContent = document.getElementById('page-content');
 
@@ -24,6 +20,9 @@ function switchTab(tabName) {
     if (tabName === 'calculator') {
         pageContent.innerHTML = renderCalculatorPage();
         initCalculatorPage();
+    } else if (tabName === 'history') {
+        pageContent.innerHTML = renderHistoryPage();
+        initHistoryPage();
     } else if (tabName === 'settings') {
         pageContent.innerHTML = renderSettingsPage();
         initSettingsPage();
@@ -39,3 +38,4 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // Initialize with calculator page
 switchTab('calculator');
+

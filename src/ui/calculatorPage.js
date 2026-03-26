@@ -5,6 +5,8 @@
 
 import { loadSettings, getFilament } from '../settings.js';
 import { calculateCost, calculatePricing, formatBaht, formatBahtRound } from '../calculator.js';
+import { saveHistory } from '../historyStore.js';
+import { openQuotationModal } from './quotationModal.js';
 
 /** Render the full calculator page HTML */
 export function renderCalculatorPage() {
@@ -112,6 +114,20 @@ function handleCalculate() {
     const breakdown = calculateCost(input, settings);
     const pricing = calculatePricing(breakdown.totalCost, settings.tiers);
 
+    // Save to history
+    const filament = getFilament(settings, filamentId);
+    const perUnitPricing = calculatePricing(breakdown.perUnitCost, settings.tiers);
+    saveHistory({
+        filamentId,
+        filamentName: filament.name,
+        weightGrams,
+        printTimeHours,
+        quantity,
+        totalCost: breakdown.totalCost,
+        perUnitCost: breakdown.perUnitCost,
+        standardPrice: perUnitPricing.standard.recommended,
+    });
+
     renderResults(breakdown, pricing, settings, quantity);
 }
 
@@ -199,13 +215,14 @@ function renderResults(breakdown, pricing, settings, quantity = 1) {
     for (const [key, meta] of Object.entries(tierMeta)) {
         const p = perUnitPricing[key];
         tierHTML += `
-      <div class="tier-card ${meta.class}">
+      <div class="tier-card ${meta.class} tier-clickable" data-tier="${key}" data-price="${p.recommended}" data-tier-name="${meta.name}" data-tier-thai="${meta.thai}">
         <div class="tier-name">${meta.name}</div>
         <div class="tier-thai">${meta.thai}</div>
         <div class="tier-price">${formatBahtRound(p.recommended)}</div>
         <div class="tier-unit">บาท/ชิ้น</div>
         <div class="tier-margin">${formatBahtRound(p.min)} — ${formatBahtRound(p.max)}</div>
         ${showQuantity ? `<div class="tier-total">รวม ${quantity} ชิ้น = ${formatBahtRound(p.recommended * quantity)}</div>` : ''}
+        <div class="tier-action">📄 สร้างใบเสนอราคา</div>
       </div>
     `;
     }
@@ -221,6 +238,23 @@ function renderResults(breakdown, pricing, settings, quantity = 1) {
 
     // Scroll to results
     container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Bind tier card click for quotation
+    const filament = getFilament(settings, document.getElementById('inp-filament').value);
+    document.querySelectorAll('.tier-clickable').forEach(card => {
+        card.addEventListener('click', () => {
+            openQuotationModal({
+                tierClass: card.dataset.tier,
+                tierName: card.dataset.tierName,
+                tierThai: card.dataset.tierThai,
+                pricePerUnit: parseFloat(card.dataset.price),
+                quantity: quantity,
+                filamentName: filament.name,
+                totalCost: breakdown.totalCost,
+                perUnitCost: breakdown.perUnitCost,
+            });
+        });
+    });
 }
 
 function showToast(message) {
