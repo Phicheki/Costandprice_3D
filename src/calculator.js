@@ -118,3 +118,18 @@ export function formatBaht(amount) {
 export function formatBahtRound(amount) {
     return '฿' + Math.round(amount).toLocaleString('th-TH');
 }
+
+/** Format a number as Thai Baht with smart decimals (only if fraction exists) */
+export function formatBahtSmart(amount) {
+    // Check if it has decimal places. We round to 2 decimals first to avoid float quirks
+    const rounded = Math.round(amount * 100) / 100;
+    
+    if (rounded % 1 === 0) {
+        return '฿' + rounded.toLocaleString('th-TH');
+    } else {
+        return '฿' + rounded.toLocaleString('th-TH', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+    }
+}

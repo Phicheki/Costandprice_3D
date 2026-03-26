@@ -4,10 +4,12 @@
  * Brand: Craft Caster
  */
 
-import { formatBaht, formatBahtRound } from '../calculator.js';
+import { formatBaht, formatBahtRound, formatBahtSmart } from '../calculator.js';
 import { showToast } from './calculatorPage.js';
+import { saveHistory, updateHistoryItem } from '../historyStore.js';
 
 let currentQuotationData = null;
+let currentHistoryId = null;
 
 /** Generate quotation number */
 function generateQuotationNumber() {
@@ -20,8 +22,9 @@ function generateQuotationNumber() {
 }
 
 /** Open quotation modal with selected tier data */
-export function openQuotationModal(data) {
+export function openQuotationModal(data, historyId = null) {
     currentQuotationData = data;
+    currentHistoryId = historyId;
 
     const existing = document.getElementById('quotation-modal');
     if (existing) existing.remove();
@@ -38,29 +41,47 @@ export function openQuotationModal(data) {
             <button class="btn-icon modal-close" id="btn-close-modal">✕</button>
         </div>
 
-        <div class="modal-tier-badge ${data.tierClass}">
-            ${data.tierName} — ราคาแนะนำ ${formatBahtRound(data.pricePerUnit)}/ชิ้น
+        <div class="modal-tier-badge ${data.tierClass || 'tier-standard'}">
+            ${data.tierName || 'รายการที่บันทึกไว้'} — ราคาแนะนำ ${formatBahtSmart(data.pricePerUnit || data.perUnitCost || 0)}/ชิ้น
+        </div>
+
+        <div class="form-group">
+            <label>📑 ประเภทเอกสาร</label>
+            <div class="qt-timeline-options" style="margin-bottom: 8px;">
+                <label class="qt-radio-label">
+                    <input type="radio" name="qt-doc-type" value="quotation" checked />
+                    <span class="qt-radio-pill normal">📄 ใบเสนอราคา</span>
+                </label>
+                <label class="qt-radio-label">
+                    <input type="radio" name="qt-doc-type" value="deposit" />
+                    <span class="qt-radio-pill custom">💸 รับมัดจำ 50%</span>
+                </label>
+                <label class="qt-radio-label">
+                    <input type="radio" name="qt-doc-type" value="receipt" />
+                    <span class="qt-radio-pill urgent">✅ รับเงิน 100%</span>
+                </label>
+            </div>
         </div>
 
         <div class="form-group">
             <label>เลขใบเสนอราคา</label>
-            <input type="text" id="qt-number" value="${qtNumber}" />
+            <input type="text" id="qt-number" value="${data.qtNumber || qtNumber}" />
         </div>
 
         <div class="form-group">
             <label>ชื่อลูกค้า</label>
-            <input type="text" id="qt-customer" placeholder="เช่น คุณสมชาย" />
+            <input type="text" id="qt-customer" placeholder="เช่น คุณสมชาย" value="${data.customer || ''}" />
         </div>
 
         <div class="form-group">
             <label>💰 ราคาขาย (บาท/ชิ้น)</label>
-            <input type="number" id="qt-price" value="${Math.round(data.pricePerUnit)}" min="0" step="1" />
-            <div class="hint">ราคาแนะนำจาก ${data.tierName}: ${formatBahtRound(data.pricePerUnit)} — แก้ไขได้ตามต้องการ</div>
+            <input type="number" id="qt-price" value="${(data.sellPrice || data.pricePerUnit || data.perUnitCost || 0)}" min="0" step="any" />
+            <div class="hint">ราคาตั้งต้น: ${formatBahtSmart(data.pricePerUnit || data.perUnitCost || 0)} — แก้ไขได้ตามต้องการ (ใส่จุดทศนิยมได้)</div>
         </div>
 
         <div class="form-group">
             <label>📉 ส่วนลด (%)</label>
-            <input type="number" id="qt-discount" placeholder="0" min="0" max="100" />
+            <input type="number" id="qt-discount" placeholder="0" min="0" max="100" value="${data.discountPct || ''}" />
             <div class="hint">ใส่เฉพาะตัวเลขเปอร์เซ็นต์ (เช่น 10 สำหรับลด 10%) — เว้นว่างถ้าไม่มีส่วนลด</div>
         </div>
 
@@ -70,7 +91,7 @@ export function openQuotationModal(data) {
 
         <div class="form-group">
             <label>ชื่องาน / รายละเอียด</label>
-            <input type="text" id="qt-description" placeholder="เช่น ฟิกเกอร์ Dragon Ball" />
+            <input type="text" id="qt-description" placeholder="เช่น ฟิกเกอร์ Dragon Ball" value="${data.description || ''}" />
         </div>
 
         <div class="form-group">
@@ -100,13 +121,19 @@ export function openQuotationModal(data) {
         </div>
 
         <button class="btn btn-primary btn-full" id="btn-generate-pdf">
-            🖨️ สร้างใบเสนอราคา
+            🖨️ สร้างเอกสาร PDF
         </button>
     </div>
     `;
 
     document.body.appendChild(modal);
     requestAnimationFrame(() => modal.classList.add('show'));
+
+    // Pre-select document type if editing
+    if (data.docType) {
+        const radio = modal.querySelector(`input[name="qt-doc-type"][value="${data.docType}"]`);
+        if (radio) radio.checked = true;
+    }
 
     document.getElementById('btn-close-modal').addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => {
@@ -125,26 +152,36 @@ export function openQuotationModal(data) {
     });
 
     const updatePreview = () => {
-        const price = parseFloat(document.getElementById('qt-price').value) || data.pricePerUnit;
+        const price = parseFloat(document.getElementById('qt-price').value) || data.pricePerUnit || data.perUnitCost || 0;
         const discountPct = parseFloat(document.getElementById('qt-discount').value) || 0;
         const qty = data.quantity || 1;
         
+        const docTypeRadio = document.querySelector('input[name="qt-doc-type"]:checked');
+        const docType = docTypeRadio ? docTypeRadio.value : 'quotation';
+
         const subtotal = price * qty;
         const discountAmt = subtotal * (discountPct / 100);
         const netTotal = subtotal - discountAmt;
 
         const previewBox = document.getElementById('qt-preview-total');
-        if (discountPct > 0 || qty > 1) {
+        if (discountPct > 0 || qty > 1 || docType === 'deposit') {
             previewBox.style.display = 'block';
             let html = ``;
             if (qty > 1) {
                 html += `<div style="display:flex; justify-content:space-between; margin-bottom: 4px; color:#475569; font-size:13px;"><span>จำนวน:</span> <span>${qty} ชิ้น</span></div>`;
             }
             if (discountPct > 0) {
-                html += `<div style="display:flex; justify-content:space-between; margin-bottom: 4px; color:#475569; font-size:13px;"><span>ยอดก่อนลด:</span> <span>${formatBahtRound(subtotal)}</span></div>`;
-                html += `<div style="display:flex; justify-content:space-between; margin-bottom: 8px; color:#ef4444; font-size:13px;"><span>ส่วนลด (${discountPct}%):</span> <span>-${formatBahtRound(discountAmt)}</span></div>`;
+                html += `<div style="display:flex; justify-content:space-between; margin-bottom: 4px; color:#475569; font-size:13px;"><span>ยอดก่อนลด:</span> <span>${formatBahtSmart(subtotal)}</span></div>`;
+                html += `<div style="display:flex; justify-content:space-between; margin-bottom: 8px; color:#ef4444; font-size:13px;"><span>ส่วนลด (${discountPct}%):</span> <span>-${formatBahtSmart(discountAmt)}</span></div>`;
             }
-            html += `<div style="display:flex; justify-content:space-between; font-weight:600; font-size:15px; color:#1e293b; border-top:1px solid #cbd5e1; padding-top:8px;"><span>ยอดรวมสุทธิ:</span> <span>${formatBahtRound(netTotal)}</span></div>`;
+            html += `<div style="display:flex; justify-content:space-between; font-weight:600; font-size:15px; color:#1e293b; border-top:1px solid #cbd5e1; padding-top:8px; margin-bottom: 4px;"><span>ยอดรวมสุทธิ:</span> <span>${formatBahtSmart(netTotal)}</span></div>`;
+            
+            if (docType === 'deposit') {
+                const depositAmt = netTotal / 2;
+                html += `<div style="display:flex; justify-content:space-between; font-size:14px; color:#10b981; margin-top: 8px;"><span>รับชำระมัดจำ 50% แล้ว:</span> <span>-${formatBahtSmart(depositAmt)}</span></div>`;
+                html += `<div style="display:flex; justify-content:space-between; font-weight:600; font-size:15px; color:#ef4444; margin-top: 8px; border-top: 1px dashed #cbd5e1; padding-top: 8px;"><span>ยอดคงค้างชำระ (Balance Due):</span> <span>${formatBahtSmart(depositAmt)}</span></div>`;
+            }
+            
             previewBox.innerHTML = html;
         } else {
             previewBox.style.display = 'none';
@@ -153,6 +190,9 @@ export function openQuotationModal(data) {
 
     document.getElementById('qt-price').addEventListener('input', updatePreview);
     document.getElementById('qt-discount').addEventListener('input', updatePreview);
+    modal.querySelectorAll('input[name="qt-doc-type"]').forEach(radio => {
+        radio.addEventListener('change', updatePreview);
+    });
     updatePreview(); // initial call
 }
 
@@ -186,12 +226,37 @@ function buildQuotationHTML(data) {
     }
 
     const quantity = data.quantity || 1;
-    const customPrice = parseFloat(document.getElementById('qt-price').value) || data.pricePerUnit;
+    const customPrice = parseFloat(document.getElementById('qt-price').value) || data.pricePerUnit || data.perUnitCost || 0;
     const discountPct = parseFloat(document.getElementById('qt-discount').value) || 0;
     
+    const docTypeRadio = document.querySelector('input[name="qt-doc-type"]:checked');
+    const docType = docTypeRadio ? docTypeRadio.value : 'quotation';
+
+    let docTitleTH = 'ใบเสนอราคา';
+    let docTitleEN = 'QUOTATION';
+    let sigLeftTH = 'ผู้เสนอราคา';
+    let sigRightTH = 'ผู้อนุมัติ / ลูกค้า';
+    let depositAmt = 0;
+
+    if (docType === 'deposit') {
+        docTitleTH = 'ใบเสร็จรับเงินมัดจำ';
+        docTitleEN = 'DEPOSIT RECEIPT';
+        sigLeftTH = 'ผู้รับเงิน';
+        sigRightTH = 'ผู้จ่ายเงิน / ลูกค้า';
+    } else if (docType === 'receipt') {
+        docTitleTH = 'ใบเสร็จรับเงิน';
+        docTitleEN = 'RECEIPT';
+        sigLeftTH = 'ผู้รับเงิน';
+        sigRightTH = 'ผู้รับสินค้า / ลูกค้า';
+    }
+
     const subtotal = customPrice * quantity;
     const discountAmt = subtotal * (discountPct / 100);
     const netTotal = subtotal - discountAmt;
+    if (docType === 'deposit') {
+        depositAmt = netTotal / 2;
+    }
+
     const dateStr = new Date().toLocaleDateString('th-TH', {
         year: 'numeric', month: 'long', day: 'numeric'
     });
@@ -438,6 +503,25 @@ function buildQuotationHTML(data) {
             color: #999;
         }
 
+        /* Paid Stamp */
+        .paid-stamp {
+            position: absolute;
+            top: 150px;
+            right: 60px;
+            border: 4px solid #10b981;
+            color: #10b981;
+            padding: 8px 24px;
+            font-size: 24px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            border-radius: 8px;
+            transform: rotate(-15deg);
+            opacity: 0.6;
+            z-index: 0;
+            pointer-events: none;
+        }
+
         /* Print-specific */
         @media print {
             body { background: white; }
@@ -494,12 +578,14 @@ function buildQuotationHTML(data) {
 
     <!-- Print Action Bar (screen only) -->
     <div class="print-bar no-print">
-        <span>📄 ใบเสนอราคา ${qtNumber}</span>
+        <span>📄 ${docTitleTH} ${qtNumber}</span>
         <button onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button>
         <button onclick="window.close()" style="background:rgba(255,255,255,0.2);color:white;">✕ ปิด</button>
     </div>
 
-    <div class="page">
+    <div class="page" style="position: relative;">
+        ${docType === 'receipt' ? '<div class="paid-stamp">PAID</div>' : ''}
+        
         <!-- Header -->
         <div class="header">
             <div class="brand">
@@ -507,8 +593,8 @@ function buildQuotationHTML(data) {
                 <div class="brand-sub">3D Printing Service</div>
             </div>
             <div class="title-badge">
-                <h1>ใบเสนอราคา</h1>
-                <div class="en">QUOTATION</div>
+                <h1>${docTitleTH}</h1>
+                <div class="en">${docTitleEN}</div>
             </div>
         </div>
 
@@ -554,29 +640,57 @@ function buildQuotationHTML(data) {
                     <td style="font-weight:500">${description}</td>
                     <td class="text-center" style="color:#666">${data.filamentName}</td>
                     <td class="text-center">${quantity}</td>
-                    <td class="text-right">${formatBahtRound(customPrice)}</td>
-                    <td class="text-right" style="font-weight:600">${formatBahtRound(subtotal)}</td>
+                    <td class="text-right">${formatBahtSmart(customPrice)}</td>
+                    <td class="text-right" style="font-weight:600">${formatBahtSmart(subtotal)}</td>
                 </tr>
             </tbody>
         </table>
 
         <!-- Totals -->
-        <div class="totals">
+        <div class="totals" style="position: relative; z-index: 1;">
             <div class="totals-box">
                 <div class="total-row">
                     <span class="label">รวมเป็นเงิน</span>
-                    <span class="value">${formatBahtRound(subtotal)}</span>
+                    <span class="value">${formatBahtSmart(subtotal)}</span>
                 </div>
                 ${discountPct > 0 ? `
                 <div class="total-row" style="color:#ef4444">
                     <span class="label">ส่วนลด (${discountPct}%)</span>
-                    <span class="value">-${formatBahtRound(discountAmt)}</span>
+                    <span class="value">-${formatBahtSmart(discountAmt)}</span>
                 </div>
                 ` : ''}
+                
+                ${docType === 'quotation' ? `
                 <div class="grand-total">
                     <span class="label">ยอดรวมสุทธิ</span>
-                    <span class="value">${formatBahtRound(netTotal)}</span>
+                    <span class="value">${formatBahtSmart(netTotal)}</span>
                 </div>
+                <div style="font-size:11px; color:#6366f1; text-align:right; margin-top:8px; font-weight:500;">
+                    * เงื่อนไขชำระมัดจำ 50% (${formatBahtSmart(netTotal/2)}) เพื่อเริ่มงาน
+                </div>
+                ` : ''}
+
+                ${docType === 'deposit' ? `
+                <div class="total-row">
+                    <span class="label" style="font-weight:600">ยอดรวมสุทธิ</span>
+                    <span class="value">${formatBahtSmart(netTotal)}</span>
+                </div>
+                <div class="total-row" style="color:#10b981;">
+                    <span class="label">หัก: รับชำระมัดจำ 50%</span>
+                    <span class="value">-${formatBahtSmart(depositAmt)}</span>
+                </div>
+                <div class="grand-total" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                    <span class="label">ยอดคงค้างชำระ (Balance Due)</span>
+                    <span class="value">${formatBahtSmart(depositAmt)}</span>
+                </div>
+                ` : ''}
+
+                ${docType === 'receipt' ? `
+                <div class="grand-total">
+                    <span class="label">ยอดชำระสุทธิ</span>
+                    <span class="value">${formatBahtSmart(netTotal)}</span>
+                </div>
+                ` : ''}
             </div>
         </div>
 
@@ -605,12 +719,12 @@ function buildQuotationHTML(data) {
         <div class="signatures">
             <div class="sig-block">
                 <div class="sig-line"></div>
-                <div class="sig-title">ผู้เสนอราคา</div>
+                <div class="sig-title">${sigLeftTH}</div>
                 <div class="sig-sub">Craft Caster</div>
             </div>
             <div class="sig-block">
                 <div class="sig-line"></div>
-                <div class="sig-title">ผู้อนุมัติ / ลูกค้า</div>
+                <div class="sig-title">${sigRightTH}</div>
                 <div class="sig-sub">วันที่ ___/___/______</div>
             </div>
         </div>
@@ -633,8 +747,29 @@ function buildQuotationHTML(data) {
 
 /** Generate PDF by opening a print window */
 function generatePDF() {
+    const qtNumber = document.getElementById('qt-number').value;
+    const customer = document.getElementById('qt-customer').value;
+    const description = document.getElementById('qt-description').value;
+    const customPrice = parseFloat(document.getElementById('qt-price').value);
+    const discountPct = parseFloat(document.getElementById('qt-discount').value) || 0;
+    const docType = document.querySelector('input[name="qt-doc-type"]:checked').value;
+
     const data = currentQuotationData;
     const htmlContent = buildQuotationHTML(data);
+
+    // Save or update order logic
+    if (currentHistoryId) {
+        updateHistoryItem(currentHistoryId, {
+            customer, description, qtNumber, sellPrice: customPrice, discountPct, docType
+        });
+    } else {
+        // Create new history item
+        const newItem = saveHistory({
+            ...data, 
+            customer, description, qtNumber, sellPrice: customPrice, discountPct, docType
+        });
+        currentHistoryId = newItem.id; // so subsequent prints update this one
+    }
 
     // Open new window with quotation content
     const printWindow = window.open('', '_blank', 'width=800,height=600');
@@ -647,5 +782,5 @@ function generatePDF() {
     printWindow.document.close();
 
     closeModal();
-    showToast('✅ เปิดใบเสนอราคาแล้ว — กด "บันทึก PDF" ได้เลย!');
+    showToast('✅ เอกสารเปิดแล้ว & บันทึกประวัติสำเร็จ!');
 }

@@ -36,6 +36,18 @@ export function deleteHistoryItem(id) {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
 
+/** Update an existing history item by id */
+export function updateHistoryItem(id, updates) {
+    const history = loadHistory();
+    const index = history.findIndex(h => h.id === id);
+    if (index !== -1) {
+        history[index] = { ...history[index], ...updates };
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        return history[index];
+    }
+    return null;
+}
+
 /** Clear all history */
 export function clearHistory() {
     localStorage.removeItem(HISTORY_KEY);

@@ -6,6 +6,7 @@
 import { loadHistory, deleteHistoryItem, clearHistory } from '../historyStore.js';
 import { formatBaht } from '../calculator.js';
 import { showToast } from './calculatorPage.js';
+import { openQuotationModal } from './quotationModal.js';
 
 /** Render the history page HTML */
 export function renderHistoryPage() {
@@ -26,14 +27,27 @@ export function renderHistoryPage() {
         const dateStr = date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' });
         const timeStr = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
+        let statusBadge = '';
+        if (item.docType === 'quotation') {
+            statusBadge = '<span class="status-badge" style="font-size:11px; padding:2px 6px; border-radius:4px; background:#fef3c7; color:#d97706; margin-left:8px;">⏳ รอชำระ</span>';
+        } else if (item.docType === 'deposit') {
+            statusBadge = '<span class="status-badge" style="font-size:11px; padding:2px 6px; border-radius:4px; background:#ecfdf5; color:#059669; margin-left:8px;">💸 รับมัดจำ 50%</span>';
+        } else if (item.docType === 'receipt') {
+            statusBadge = '<span class="status-badge" style="font-size:11px; padding:2px 6px; border-radius:4px; background:#e0e7ff; color:#4f46e5; margin-left:8px;">✅ จ่ายครบแล้ว</span>';
+        }
+
+        const titleText = item.customer 
+            ? `👥 ${item.customer} ${statusBadge}<div style="font-size:12px; font-weight:400; color:#64748b; margin-top:4px;">${item.description || 'ไม่มีรายละเอียดงาน'}</div>` 
+            : `${item.filamentName || 'N/A'} — ${item.weightGrams}g × ${item.quantity || 1} ชิ้น ${statusBadge}`;
+
         return `
         <div class="history-card" data-id="${item.id}">
             <div class="history-card-header" data-id="${item.id}">
                 <div class="history-card-info">
-                    <div class="history-card-title">${item.filamentName || 'N/A'} — ${item.weightGrams}g × ${item.quantity || 1} ชิ้น</div>
+                    <div class="history-card-title">${titleText}</div>
                     <div class="history-card-date">${dateStr} ${timeStr}</div>
                 </div>
-                <div class="history-card-price">${formatBaht(item.totalCost)}</div>
+                <div class="history-card-price">${formatBaht(item.sellPrice || item.totalCost)}</div>
             </div>
             <div class="history-card-detail" id="detail-${item.id}">
                 <div class="history-detail-grid">
@@ -53,11 +67,26 @@ export function renderHistoryPage() {
                         <span class="detail-label">จำนวน</span>
                         <span class="detail-value">${item.quantity || 1} ชิ้น</span>
                     </div>
-                    <div class="history-detail-item">
+
+                    ${item.breakdown ? `
+                    <div class="history-detail-item" style="grid-column: 1 / -1; margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 8px;">
+                        <span class="detail-label" style="display:block; margin-bottom: 6px; font-weight:600;">📊 โครงสร้างต้นทุน</span>
+                        <div style="display:grid; grid-template-columns: 1fr; gap: 4px; font-size: 12px;">
+                            <div style="display:flex; justify-content:space-between"><span style="color:var(--text-muted)">ค่าวัสดุ:</span> <span>${formatBaht(item.breakdown.materialCost)}</span></div>
+                            <div style="display:flex; justify-content:space-between"><span style="color:var(--text-muted)">ค่าไฟ:</span> <span>${formatBaht(item.breakdown.electricityCost)}</span></div>
+                            <div style="display:flex; justify-content:space-between"><span style="color:var(--text-muted)">ค่าเสื่อม:</span> <span>${formatBaht(item.breakdown.depreciationCost)}</span></div>
+                            <div style="display:flex; justify-content:space-between"><span style="color:var(--text-muted)">ค่าซ่อมบำรุง:</span> <span>${formatBaht(item.breakdown.maintenanceCost)}</span></div>
+                            <div style="display:flex; justify-content:space-between"><span style="color:var(--text-muted)">ค่าแรงปั้น / Slicing:</span> <span>${formatBaht(item.breakdown.modelingCost + item.breakdown.slicingCost)}</span></div>
+                            <div style="display:flex; justify-content:space-between"><span style="color:var(--text-muted)">ค่า Post-Processing:</span> <span>${formatBaht(item.breakdown.postProcessCost)}</span></div>
+                            <div style="display:flex; justify-content:space-between"><span style="color:var(--text-muted)">ต้นทุนแฝง (Overhead):</span> <span>${formatBaht(item.breakdown.overheadCost)}</span></div>
+                        </div>
+                    </div>` : ''}
+
+                    <div class="history-detail-item" style="margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 8px;">
                         <span class="detail-label">ต้นทุนรวม</span>
                         <span class="detail-value accent">${formatBaht(item.totalCost)}</span>
                     </div>
-                    <div class="history-detail-item">
+                    <div class="history-detail-item" style="margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 8px;">
                         <span class="detail-label">ต้นทุน/ชิ้น</span>
                         <span class="detail-value accent">${formatBaht(item.perUnitCost)}</span>
                     </div>
@@ -67,7 +96,10 @@ export function renderHistoryPage() {
                         <span class="detail-value" style="color:var(--tier-standard)">${formatBaht(item.standardPrice)}/ชิ้น</span>
                     </div>` : ''}
                 </div>
-                <button class="btn btn-danger btn-sm btn-delete-history" data-id="${item.id}">🗑️ ลบ</button>
+                <div style="margin-top: 16px; display: flex; gap: 8px;">
+                    <button class="btn btn-primary btn-sm btn-print-history" data-id="${item.id}" style="flex: 1;">📄 จัดการ/ออกเอกสาร</button>
+                    <button class="btn btn-danger btn-sm btn-delete-history" data-id="${item.id}">🗑️ ลบ</button>
+                </div>
             </div>
         </div>
         `;
@@ -93,6 +125,19 @@ export function initHistoryPage() {
         header.addEventListener('click', () => {
             const card = header.closest('.history-card');
             card.classList.toggle('expanded');
+        });
+    });
+
+    // Open Print Modal for history item
+    document.querySelectorAll('.btn-print-history').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = parseInt(btn.dataset.id);
+            const history = loadHistory();
+            const item = history.find(h => h.id === id);
+            if (item) {
+                openQuotationModal(item, id);
+            }
         });
     });
 

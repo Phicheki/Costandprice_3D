@@ -797,7 +797,7 @@ select option {
 }
 
 .history-card.expanded .history-card-detail {
-  max-height: 300px;
+  max-height: 800px;
   padding: 0 16px 14px;
 }
 

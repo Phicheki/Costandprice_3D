@@ -117,7 +117,7 @@ function handleCalculate() {
     // Save to history
     const filament = getFilament(settings, filamentId);
     const perUnitPricing = calculatePricing(breakdown.perUnitCost, settings.tiers);
-    saveHistory({
+    const savedItem = saveHistory({
         filamentId,
         filamentName: filament.name,
         weightGrams,
@@ -126,12 +126,13 @@ function handleCalculate() {
         totalCost: breakdown.totalCost,
         perUnitCost: breakdown.perUnitCost,
         standardPrice: perUnitPricing.standard.recommended,
+        breakdown,
     });
 
-    renderResults(breakdown, pricing, settings, quantity);
+    renderResults(breakdown, pricing, settings, quantity, savedItem);
 }
 
-function renderResults(breakdown, pricing, settings, quantity = 1) {
+function renderResults(breakdown, pricing, settings, quantity = 1, savedItem = null) {
     const container = document.getElementById('results-container');
     container.style.display = 'block';
 
@@ -244,6 +245,7 @@ function renderResults(breakdown, pricing, settings, quantity = 1) {
     document.querySelectorAll('.tier-clickable').forEach(card => {
         card.addEventListener('click', () => {
             openQuotationModal({
+                ...savedItem, // includes weightGrams, printTimeHours
                 tierClass: card.dataset.tier,
                 tierName: card.dataset.tierName,
                 tierThai: card.dataset.tierThai,
@@ -252,7 +254,8 @@ function renderResults(breakdown, pricing, settings, quantity = 1) {
                 filamentName: filament.name,
                 totalCost: breakdown.totalCost,
                 perUnitCost: breakdown.perUnitCost,
-            });
+                breakdown: breakdown,
+            }, savedItem ? savedItem.id : null);
         });
     });
 }
