@@ -12,130 +12,149 @@ export function renderSettingsPage() {
 
     return `
     <!-- Filament Settings -->
-    <div class="glass-card">
-      <h2><span class="card-icon">🧵</span> ตั้งค่า Filament</h2>
-      <div id="filament-list" class="filament-cards">
-        ${s.filaments.map((f, i) => renderFilamentCard(f, i, s.filaments.length)).join('')}
+    <details class="settings-accordion">
+      <summary><h2><span class="card-icon">🧵</span> ตั้งค่า Filament</h2></summary>
+      <div class="accordion-body">
+        <div id="filament-list" class="filament-cards">
+          ${s.filaments.map((f, i) => renderFilamentCard(f, i, s.filaments.length)).join('')}
+        </div>
+        <button class="btn btn-secondary" id="btn-add-filament" style="margin-top: 12px;">
+          ➕ เพิ่มชนิด Filament
+        </button>
       </div>
-      <button class="btn btn-secondary" id="btn-add-filament" style="margin-top: 12px;">
-        ➕ เพิ่มชนิด Filament
-      </button>
-    </div>
+    </details>
 
     <!-- Machine & Electricity -->
-    <div class="glass-card">
-      <h2><span class="card-icon">⚡</span> เครื่องพิมพ์ & ค่าไฟ</h2>
-
-      <div class="form-row">
-        <div class="setting-item">
-          <label>กำลังไฟเครื่องปริ้น (W)</label>
-          <input type="number" id="set-printer-watt" value="${s.printerWattage}" min="0" />
-          <div class="hint">Bambu Lab P2S ≈ 350W</div>
+    <details class="settings-accordion">
+      <summary><h2><span class="card-icon">⚡</span> เครื่องพิมพ์ & ค่าไฟ</h2></summary>
+      <div class="accordion-body">
+        <div class="form-row">
+          <div class="setting-item">
+            <label>กำลังไฟเครื่องปริ้น (W)</label>
+            <input type="number" id="set-printer-watt" value="${s.printerWattage}" min="0" />
+            <div class="hint">Bambu Lab P2S ≈ 350W</div>
+          </div>
+          <div class="setting-item">
+            <label>กำลังไฟเครื่องอบ (W)</label>
+            <input type="number" id="set-dryer-watt" value="${s.dryerWattage}" min="0" />
+            <div class="hint">Creality Space Pi ≈ 80W</div>
+          </div>
         </div>
-        <div class="setting-item">
-          <label>กำลังไฟเครื่องอบ (W)</label>
-          <input type="number" id="set-dryer-watt" value="${s.dryerWattage}" min="0" />
-          <div class="hint">Creality Space Pi ≈ 80W</div>
+
+        <div class="form-row">
+          <div class="setting-item">
+            <label>ค่าไฟ (บาท/kWh)</label>
+            <input type="number" id="set-elec-rate" value="${s.electricityRate}" min="0" step="0.1" />
+          </div>
+          <div class="setting-item">
+            <label>% เผื่อเสีย (Material Loss)</label>
+            <input type="number" id="set-material-loss" value="${s.materialLossPercent}" min="0" max="100" step="1" />
+          </div>
         </div>
       </div>
-
-      <div class="form-row">
-        <div class="setting-item">
-          <label>ค่าไฟ (บาท/kWh)</label>
-          <input type="number" id="set-elec-rate" value="${s.electricityRate}" min="0" step="0.1" />
-        </div>
-        <div class="setting-item">
-          <label>% เผื่อเสีย (Material Loss)</label>
-          <input type="number" id="set-material-loss" value="${s.materialLossPercent}" min="0" max="100" step="1" />
-        </div>
-      </div>
-    </div>
+    </details>
 
     <!-- Depreciation & Maintenance -->
-    <div class="glass-card">
-      <h2><span class="card-icon">📉</span> ค่าเสื่อมราคา & ซ่อมบำรุง</h2>
-
-      <div class="form-row">
-        <div class="setting-item">
-          <label>ราคาเครื่อง (บาท)</label>
-          <input type="number" id="set-printer-price" value="${s.printerPrice}" min="0" />
+    <details class="settings-accordion">
+      <summary><h2><span class="card-icon">📉</span> ค่าเสื่อมราคา & ซ่อมบำรุง</h2></summary>
+      <div class="accordion-body">
+        <div class="form-row">
+          <div class="setting-item">
+            <label>ราคาเครื่อง (บาท)</label>
+            <input type="number" id="set-printer-price" value="${s.printerPrice}" min="0" />
+          </div>
+          <div class="setting-item">
+            <label>อายุการใช้งาน (ชม.)</label>
+            <input type="number" id="set-printer-life" value="${s.printerLifetimeHours}" min="1" />
+          </div>
         </div>
+
         <div class="setting-item">
-          <label>อายุการใช้งาน (ชม.)</label>
-          <input type="number" id="set-printer-life" value="${s.printerLifetimeHours}" min="1" />
+          <label>ค่าซ่อมบำรุง (บาท/ชม.)</label>
+          <input type="number" id="set-maintenance" value="${s.maintenanceCostPerHour}" min="0" step="0.5" />
         </div>
       </div>
-
-      <div class="setting-item">
-        <label>ค่าซ่อมบำรุง (บาท/ชม.)</label>
-        <input type="number" id="set-maintenance" value="${s.maintenanceCostPerHour}" min="0" step="0.5" />
-      </div>
-    </div>
+    </details>
 
     <!-- Labor -->
-    <div class="glass-card">
-      <h2><span class="card-icon">👷</span> ค่าแรง</h2>
+    <details class="settings-accordion">
+      <summary><h2><span class="card-icon">👷</span> ค่าแรง</h2></summary>
+      <div class="accordion-body">
+        <div class="setting-item">
+          <label>ค่าแรง (บาท/ชม.)</label>
+          <input type="number" id="set-labor-rate" value="${s.laborRatePerHour}" min="0" />
+          <div class="hint">ใช้สำหรับปั้นแบบ, Slicing, และ Post-Processing</div>
+        </div>
 
-      <div class="setting-item">
-        <label>ค่าแรง (บาท/ชม.)</label>
-        <input type="number" id="set-labor-rate" value="${s.laborRatePerHour}" min="0" />
-        <div class="hint">ใช้สำหรับปั้นแบบ, Slicing, และ Post-Processing</div>
+        <div class="setting-item">
+          <label>% ต้นทุนแฝง (Overhead)</label>
+          <input type="number" id="set-overhead" value="${s.overheadPercent}" min="0" max="100" step="1" />
+        </div>
       </div>
-
-      <div class="setting-item">
-        <label>% ต้นทุนแฝง (Overhead)</label>
-        <input type="number" id="set-overhead" value="${s.overheadPercent}" min="0" max="100" step="1" />
-      </div>
-    </div>
+    </details>
 
     <!-- Pricing Tiers -->
-    <div class="glass-card">
-      <h2><span class="card-icon">💲</span> ตั้งค่า Pricing Tiers (ตัวคูณ)</h2>
-
-      <div class="form-row" style="margin-bottom:12px">
-        <div class="setting-item">
-          <label style="color: var(--tier-economy)">Economy — Min</label>
-          <input type="number" id="set-tier-eco-min" value="${s.tiers.economy.min}" min="1" step="0.1" />
+    <details class="settings-accordion">
+      <summary><h2><span class="card-icon">💲</span> ตั้งค่า Pricing Tiers (ตัวคูณ)</h2></summary>
+      <div class="accordion-body">
+        <div class="form-row" style="margin-bottom:12px">
+          <div class="setting-item">
+            <label style="color: var(--tier-economy)">Economy — Min</label>
+            <input type="number" id="set-tier-eco-min" value="${s.tiers.economy.min}" min="1" step="0.1" />
+          </div>
+          <div class="setting-item">
+            <label style="color: var(--tier-economy)">Economy — Max</label>
+            <input type="number" id="set-tier-eco-max" value="${s.tiers.economy.max}" min="1" step="0.1" />
+          </div>
         </div>
-        <div class="setting-item">
-          <label style="color: var(--tier-economy)">Economy — Max</label>
-          <input type="number" id="set-tier-eco-max" value="${s.tiers.economy.max}" min="1" step="0.1" />
+
+        <div class="form-row" style="margin-bottom:12px">
+          <div class="setting-item">
+            <label style="color: var(--tier-standard)">Standard — Min</label>
+            <input type="number" id="set-tier-std-min" value="${s.tiers.standard.min}" min="1" step="0.1" />
+          </div>
+          <div class="setting-item">
+            <label style="color: var(--tier-standard)">Standard — Max</label>
+            <input type="number" id="set-tier-std-max" value="${s.tiers.standard.max}" min="1" step="0.1" />
+          </div>
+        </div>
+
+        <div class="form-row" style="margin-bottom:12px">
+          <div class="setting-item">
+            <label style="color: var(--tier-rush)">Rush — Min</label>
+            <input type="number" id="set-tier-rush-min" value="${s.tiers.rush.min}" min="1" step="0.1" />
+          </div>
+          <div class="setting-item">
+            <label style="color: var(--tier-rush)">Rush — Max</label>
+            <input type="number" id="set-tier-rush-max" value="${s.tiers.rush.max}" min="1" step="0.1" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="setting-item">
+            <label style="color: var(--tier-premium)">Premium — Min</label>
+            <input type="number" id="set-tier-prem-min" value="${s.tiers.premium.min}" min="1" step="0.1" />
+          </div>
+          <div class="setting-item">
+            <label style="color: var(--tier-premium)">Premium — Max</label>
+            <input type="number" id="set-tier-prem-max" value="${s.tiers.premium.max}" min="1" step="0.1" />
+          </div>
         </div>
       </div>
+    </details>
 
-      <div class="form-row" style="margin-bottom:12px">
-        <div class="setting-item">
-          <label style="color: var(--tier-standard)">Standard — Min</label>
-          <input type="number" id="set-tier-std-min" value="${s.tiers.standard.min}" min="1" step="0.1" />
+    <!-- Quick Quote Pricing -->
+    <details class="settings-accordion">
+      <summary><h2><span class="card-icon">📏</span> ราคาเหมาโมเดล (Quick Quote)</h2></summary>
+      <div class="accordion-body">
+        <div id="quickquote-list" class="filament-cards">
+          ${s.modelPricing ? s.modelPricing.map((m, i) => renderQuickQuoteCard(m, i, s.modelPricing.length)).join('') : ''}
         </div>
-        <div class="setting-item">
-          <label style="color: var(--tier-standard)">Standard — Max</label>
-          <input type="number" id="set-tier-std-max" value="${s.tiers.standard.max}" min="1" step="0.1" />
-        </div>
+        <button class="btn btn-secondary" id="btn-add-quickquote" style="margin-top: 12px;">
+          ➕ เพิ่มขนาดโมเดล
+        </button>
       </div>
-
-      <div class="form-row" style="margin-bottom:12px">
-        <div class="setting-item">
-          <label style="color: var(--tier-rush)">Rush — Min</label>
-          <input type="number" id="set-tier-rush-min" value="${s.tiers.rush.min}" min="1" step="0.1" />
-        </div>
-        <div class="setting-item">
-          <label style="color: var(--tier-rush)">Rush — Max</label>
-          <input type="number" id="set-tier-rush-max" value="${s.tiers.rush.max}" min="1" step="0.1" />
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="setting-item">
-          <label style="color: var(--tier-premium)">Premium — Min</label>
-          <input type="number" id="set-tier-prem-min" value="${s.tiers.premium.min}" min="1" step="0.1" />
-        </div>
-        <div class="setting-item">
-          <label style="color: var(--tier-premium)">Premium — Max</label>
-          <input type="number" id="set-tier-prem-max" value="${s.tiers.premium.max}" min="1" step="0.1" />
-        </div>
-      </div>
-    </div>
+    </details>
 
     <!-- Actions -->
     <div class="settings-actions">
@@ -167,6 +186,33 @@ function renderFilamentCard(f, index, totalCount) {
           <div class="form-group">
             <label>น้ำหนัก/ม้วน (g)</label>
             <input type="number" class="fil-weight" value="${f.weightPerRoll}" min="1" />
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderQuickQuoteCard(m, index, totalCount) {
+    return `
+    <div class="filament-card qq-card" data-index="${index}">
+      <div class="filament-card-header">
+        <span class="filament-card-title">📏 ${m.size || 'ขนาดใหม่'}</span>
+        ${totalCount > 1 ? `<button class="btn-icon btn-delete-qq" data-index="${index}" title="ลบ">🗑️</button>` : ''}
+      </div>
+      <div class="filament-card-body">
+        <div class="form-group">
+          <label>ขนาด / ชื่อรุ่น</label>
+          <input type="text" class="qq-size-input" value="${m.size || ''}" placeholder="เช่น 5 cm." />
+        </div>
+        <div class="filament-card-row">
+          <div class="form-group">
+            <label>ราคางานดิบ (฿)</label>
+            <input type="number" class="qq-raw" value="${m.rawPrice || 0}" min="0" />
+          </div>
+          <div class="form-group">
+            <label>ราคางานทำสี (฿)</label>
+            <input type="number" class="qq-painted" value="${m.paintedPrice || 0}" min="0" />
           </div>
         </div>
       </div>
@@ -210,6 +256,14 @@ export function initSettingsPage() {
         btn.addEventListener('click', handleDeleteFilament);
     });
 
+    // Add quick quote
+    document.getElementById('btn-add-quickquote')?.addEventListener('click', handleAddQuickQuote);
+
+    // Delete quick quote
+    document.querySelectorAll('.btn-delete-qq').forEach(btn => {
+        btn.addEventListener('click', handleDeleteQuickQuote);
+    });
+
     // Auto-save on any input change
     const container = document.getElementById('page-content');
     if (container) {
@@ -218,14 +272,16 @@ export function initSettingsPage() {
     }
 }
 
-function handleSave() {
+function handleSave(isAutoSave = false) {
     const settings = loadSettings();
 
     // Gather filament data
-    const rows = document.querySelectorAll('.filament-card');
+    const rows = document.querySelectorAll('.filament-card:not(.qq-card)');
     const filaments = [];
     rows.forEach((row, i) => {
-        const name = row.querySelector('.fil-name').value.trim();
+        const nameNode = row.querySelector('.fil-name');
+        if (!nameNode) return;
+        const name = nameNode.value.trim();
         const pricePerRoll = parseFloat(row.querySelector('.fil-price').value) || 0;
         const weightPerRoll = parseFloat(row.querySelector('.fil-weight').value) || 1000;
         if (name) {
@@ -235,7 +291,7 @@ function handleSave() {
     });
 
     if (filaments.length === 0) {
-        showToast('⚠️ ต้องมี Filament อย่างน้อย 1 ชนิด');
+        if (!isAutoSave) showToast('⚠️ ต้องมี Filament อย่างน้อย 1 ชนิด');
         return;
     }
 
@@ -258,8 +314,31 @@ function handleSave() {
         premium: { min: parseFloat(document.getElementById('set-tier-prem-min').value) || 1, max: parseFloat(document.getElementById('set-tier-prem-max').value) || 1 },
     };
 
+    // Gather quick quote data
+    const qqRows = document.querySelectorAll('.qq-card');
+    const modelPricing = [];
+    qqRows.forEach((row) => {
+        const sizeInput = row.querySelector('.qq-size-input').value.trim();
+        const rawPrice = parseFloat(row.querySelector('.qq-raw').value) || 0;
+        const paintedPrice = parseFloat(row.querySelector('.qq-painted').value) || 0;
+        if (sizeInput) {
+            const id = sizeInput.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const item = { id, size: sizeInput, rawPrice, paintedPrice };
+            if (sizeInput.toLowerCase().includes('custom')) {
+                item.prefix = 'เริ่มต้น ';
+            }
+            modelPricing.push(item);
+        }
+    });
+
+    if (modelPricing.length === 0) {
+        if (!isAutoSave) showToast('⚠️ ต้องมีราคาโมเดลอย่างน้อย 1 รายการ');
+        return;
+    }
+    settings.modelPricing = modelPricing;
+
     saveSettings(settings);
-    showToast('✅ บันทึกสำเร็จ');
+    if (!isAutoSave) showToast('✅ บันทึกสำเร็จ');
 }
 
 function handleReset() {
@@ -285,18 +364,17 @@ function handleAddFilament() {
 }
 
 function handleDeleteFilament(e) {
-    const index = parseInt(e.currentTarget.dataset.index);
-    const cards = document.querySelectorAll('.filament-card');
+    const cards = document.querySelectorAll('.filament-card:not(.qq-card)');
     if (cards.length <= 1) {
         showToast('⚠️ ต้องมี Filament อย่างน้อย 1 ชนิด');
         return;
     }
-    cards[index].remove();
+    e.currentTarget.closest('.filament-card').remove();
     refreshFilamentCards();
 }
 
 function refreshFilamentCards() {
-    const cards = document.querySelectorAll('.filament-card');
+    const cards = document.querySelectorAll('.filament-card:not(.qq-card)');
     const totalCount = cards.length;
     cards.forEach((card, i) => {
         card.dataset.index = i;
@@ -316,6 +394,55 @@ function refreshFilamentCards() {
             btn.title = 'ลบ';
             btn.textContent = '🗑️';
             btn.addEventListener('click', handleDeleteFilament);
+            header.appendChild(btn);
+        } else if (totalCount <= 1 && existingBtn) {
+            existingBtn.remove();
+        } else if (existingBtn) {
+            existingBtn.dataset.index = i;
+        }
+    });
+}
+
+function handleAddQuickQuote() {
+    const list = document.getElementById('quickquote-list');
+    const totalCount = list.querySelectorAll('.qq-card').length + 1;
+    const newCard = document.createElement('div');
+    newCard.innerHTML = renderQuickQuoteCard({ id: '', size: '', rawPrice: 0, paintedPrice: 0 }, totalCount - 1, totalCount);
+    const card = newCard.firstElementChild;
+    list.appendChild(card);
+
+    refreshQuickQuoteCards();
+}
+
+function handleDeleteQuickQuote(e) {
+    const cards = document.querySelectorAll('.qq-card');
+    if (cards.length <= 1) {
+        showToast('⚠️ ต้องมีราคาโมเดลอย่างน้อย 1 รายการ');
+        return;
+    }
+    e.currentTarget.closest('.qq-card').remove();
+    refreshQuickQuoteCards();
+}
+
+function refreshQuickQuoteCards() {
+    const cards = document.querySelectorAll('.qq-card');
+    const totalCount = cards.length;
+    cards.forEach((card, i) => {
+        card.dataset.index = i;
+        const nameInput = card.querySelector('.qq-size-input');
+        const title = card.querySelector('.filament-card-title');
+        if (title && nameInput) {
+            title.textContent = '📏 ' + (nameInput.value || 'ขนาดใหม่');
+        }
+        const existingBtn = card.querySelector('.btn-delete-qq');
+        if (totalCount > 1 && !existingBtn) {
+            const header = card.querySelector('.filament-card-header');
+            const btn = document.createElement('button');
+            btn.className = 'btn-icon btn-delete-qq';
+            btn.dataset.index = i;
+            btn.title = 'ลบ';
+            btn.textContent = '🗑️';
+            btn.addEventListener('click', handleDeleteQuickQuote);
             header.appendChild(btn);
         } else if (totalCount <= 1 && existingBtn) {
             existingBtn.remove();

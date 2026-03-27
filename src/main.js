@@ -2,13 +2,14 @@ import './style.css';
 import { renderCalculatorPage, initCalculatorPage } from './ui/calculatorPage.js';
 import { renderSettingsPage, initSettingsPage } from './ui/settingsPage.js';
 import { renderHistoryPage, initHistoryPage } from './ui/historyPage.js';
+import { renderQuickQuotePage, initQuickQuotePage } from './ui/quickQuotePage.js';
 
 const pageContent = document.getElementById('page-content');
 
-let currentTab = 'calculator';
+export let currentTab = 'calculator';
 
 /** Switch to a tab and render its page */
-function switchTab(tabName) {
+export function switchTab(tabName) {
     currentTab = tabName;
 
     // Update tab button styles
@@ -23,6 +24,9 @@ function switchTab(tabName) {
     } else if (tabName === 'history') {
         pageContent.innerHTML = renderHistoryPage();
         initHistoryPage();
+    } else if (tabName === 'quickquote') {
+        pageContent.innerHTML = renderQuickQuotePage();
+        initQuickQuotePage();
     } else if (tabName === 'settings') {
         pageContent.innerHTML = renderSettingsPage();
         initSettingsPage();
@@ -35,6 +39,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         switchTab(btn.dataset.tab);
     });
 });
+
+export function refreshCurrentTab() {
+    switchTab(currentTab);
+}
 
 // Initialize with calculator page
 switchTab('calculator');

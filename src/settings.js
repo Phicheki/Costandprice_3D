@@ -45,6 +45,16 @@ const DEFAULTS = {
         rush: { min: 3.9, max: 6.0 },   // Standard × 1.3-1.5
         premium: { min: 5.0, max: 10.0 },
     },
+
+    // === Model Pricing (Quick Quote) ===
+    modelPricing: [
+        { id: '5cm', size: '5 cm.', rawPrice: 290, paintedPrice: 890 },
+        { id: '10cm', size: '10 cm.', rawPrice: 490, paintedPrice: 1490 },
+        { id: '15cm', size: '15 cm.', rawPrice: 790, paintedPrice: 2290 },
+        { id: '20cm', size: '20 cm.', rawPrice: 1190, paintedPrice: 3490 },
+        { id: '25cm', size: '25 cm.', rawPrice: 1590, paintedPrice: 4590 },
+        { id: 'custom', size: 'Custom', rawPrice: 1800, paintedPrice: 5000, prefix: 'เริ่มต้น ' }
+    ],
 };
 
 /**
@@ -67,6 +77,9 @@ export function loadSettings() {
             filaments: saved.filaments && saved.filaments.length
                 ? saved.filaments
                 : DEFAULTS.filaments,
+            modelPricing: saved.modelPricing && saved.modelPricing.length
+                ? saved.modelPricing
+                : DEFAULTS.modelPricing,
         };
     } catch {
         return { ...DEFAULTS };

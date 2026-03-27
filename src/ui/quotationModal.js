@@ -7,6 +7,7 @@
 import { formatBaht, formatBahtRound, formatBahtSmart } from '../calculator.js';
 import { showToast } from './calculatorPage.js';
 import { saveHistory, updateHistoryItem } from '../historyStore.js';
+import { refreshCurrentTab } from '../main.js';
 
 let currentQuotationData = null;
 let currentHistoryId = null;
@@ -783,4 +784,7 @@ function generatePDF() {
 
     closeModal();
     showToast('✅ เอกสารเปิดแล้ว & บันทึกประวัติสำเร็จ!');
+    
+    // Refresh the UI to reflect the updated docType status (e.g. from Pending to Deposit)
+    refreshCurrentTab();
 }

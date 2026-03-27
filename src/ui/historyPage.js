@@ -36,9 +36,13 @@ export function renderHistoryPage() {
             statusBadge = '<span class="status-badge" style="font-size:11px; padding:2px 6px; border-radius:4px; background:#e0e7ff; color:#4f46e5; margin-left:8px;">✅ จ่ายครบแล้ว</span>';
         }
 
+        const fallbackTitle = item.weightGrams !== undefined
+            ? `${item.filamentName || 'N/A'} — ${item.weightGrams}g × ${item.quantity || 1} ชิ้น ${statusBadge}`
+            : `${item.description || 'รายการประเมินด่วน'} × ${item.quantity || 1} ชิ้น ${statusBadge}`;
+
         const titleText = item.customer 
             ? `👥 ${item.customer} ${statusBadge}<div style="font-size:12px; font-weight:400; color:#64748b; margin-top:4px;">${item.description || 'ไม่มีรายละเอียดงาน'}</div>` 
-            : `${item.filamentName || 'N/A'} — ${item.weightGrams}g × ${item.quantity || 1} ชิ้น ${statusBadge}`;
+            : fallbackTitle;
 
         return `
         <div class="history-card" data-id="${item.id}">
@@ -57,11 +61,11 @@ export function renderHistoryPage() {
                     </div>
                     <div class="history-detail-item">
                         <span class="detail-label">น้ำหนัก</span>
-                        <span class="detail-value">${item.weightGrams}g</span>
+                        <span class="detail-value">${item.weightGrams !== undefined ? item.weightGrams + 'g' : '-'}</span>
                     </div>
                     <div class="history-detail-item">
                         <span class="detail-label">เวลาปริ้น</span>
-                        <span class="detail-value">${item.printTimeHours} ชม.</span>
+                        <span class="detail-value">${item.printTimeHours !== undefined ? item.printTimeHours + ' ชม.' : '-'}</span>
                     </div>
                     <div class="history-detail-item">
                         <span class="detail-label">จำนวน</span>
