@@ -1144,3 +1144,140 @@ details.settings-accordion .accordion-body {
   to { opacity: 0; transform: translateY(-10px); }
 }
 
+/* --- Multi-Plate Input --- */
+#plates-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.plate-item {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.35s ease;
+}
+
+.plate-item:hover {
+  border-color: rgba(99, 102, 241, 0.25);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.plate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.plate-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-accent);
+  letter-spacing: 0.3px;
+}
+
+.btn-plate-remove {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--danger);
+  font-size: 0.75rem;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.btn-plate-remove:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  transform: scale(1.1);
+}
+
+.plate-inputs {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 0.8fr;
+  gap: 10px;
+}
+
+.plate-inputs .form-group {
+  margin-bottom: 0;
+}
+
+.plate-inputs label {
+  font-size: 0.72rem;
+}
+
+/* Add Plate Button */
+.btn-add-plate {
+  width: 100%;
+  padding: 10px;
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px dashed rgba(99, 102, 241, 0.3);
+  border-radius: var(--radius-md);
+  color: var(--text-accent);
+  font-family: var(--font-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 12px;
+}
+
+.btn-add-plate:hover {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+.btn-add-plate span {
+  font-size: 1rem;
+}
+
+/* Plates Summary Bar */
+.plates-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-accent);
+  animation: fadeInUp 0.3s ease;
+  margin-bottom: 4px;
+}
+
+.plates-summary-divider {
+  color: rgba(255, 255, 255, 0.12);
+}
+
+/* Responsive: stack plate inputs on small screens */
+@media (max-width: 480px) {
+  .plate-inputs {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .plate-input-weight {
+    grid-column: 1 / -1;
+  }
+
+  .plates-summary {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+

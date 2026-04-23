@@ -9,11 +9,43 @@ import { saveHistory } from '../historyStore.js';
 import { openQuotationModal } from './quotationModal.js';
 
 /** Render the full calculator page HTML */
+/** Global plate counter */
+let plateCounter = 0;
+
+/** Generate HTML for a single plate row */
+function createPlateHTML(plateNum) {
+    const id = plateCounter++;
+    return `
+    <div class="plate-item" data-plate-id="${id}">
+      <div class="plate-header">
+        <span class="plate-label">🖨️ Plate ${plateNum}</span>
+        <button type="button" class="btn-plate-remove" data-remove-plate="${id}" title="ลบ Plate นี้">✕</button>
+      </div>
+      <div class="plate-inputs">
+        <div class="form-group plate-input-weight">
+          <label>น้ำหนัก (g)</label>
+          <input type="number" class="plate-weight" placeholder="เช่น 45" min="0" step="0.1" />
+        </div>
+        <div class="form-group plate-input-time">
+          <label>ชั่วโมง (h)</label>
+          <input type="number" class="plate-time-h" placeholder="0" min="0" step="1" />
+        </div>
+        <div class="form-group plate-input-time">
+          <label>นาที (m)</label>
+          <input type="number" class="plate-time-m" placeholder="0" min="0" max="59" step="1" />
+        </div>
+      </div>
+    </div>`;
+}
+
 export function renderCalculatorPage() {
     const settings = loadSettings();
     const filamentOptions = settings.filaments
         .map(f => `<option value="${f.id}">${f.name} (฿${f.pricePerRoll}/${f.weightPerRoll}g)</option>`)
         .join('');
+
+    // Reset counter for fresh render
+    plateCounter = 0;
 
     return `
     <!-- Input Form -->
@@ -27,21 +59,22 @@ export function renderCalculatorPage() {
         </select>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>น้ำหนักที่ใช้ (กรัม)</label>
-          <input type="number" id="inp-weight" placeholder="เช่น 45" min="0" step="0.1" />
-        </div>
-        <div class="form-group">
-          <label>เวลาปริ้น (ชั่วโมง)</label>
-          <input type="number" id="inp-time" placeholder="เช่น 2.5" min="0" step="0.01" />
-        </div>
+      <!-- Plates Container -->
+      <div id="plates-container">
+        ${createPlateHTML(1)}
       </div>
 
-      <div class="form-group">
-        <label>จำนวนชิ้น</label>
+      <button type="button" class="btn btn-add-plate" id="btn-add-plate">
+        <span>＋</span> เพิ่ม Plate
+      </button>
+
+      <!-- Summary bar (shows when >1 plate) -->
+      <div id="plates-summary" class="plates-summary" style="display:none;"></div>
+
+      <div class="form-group" style="margin-top: 16px;">
+        <label>จำนวนชิ้น (ชุด)</label>
         <input type="number" id="inp-quantity" placeholder="1" min="1" step="1" value="1" />
-        <div class="hint">น้ำหนักและเวลาปริ้น = ต่อ 1 ชิ้น / ค่าปั้นแบบ & Slicing จะเฉลี่ยต่อชิ้น</div>
+        <div class="hint">น้ำหนักและเวลาปริ้นจะรวมจากทุก Plate / ค่าปั้นแบบ & Slicing จะเฉลี่ยต่อชิ้น</div>
       </div>
     </div>
 
@@ -85,28 +118,165 @@ export function initCalculatorPage() {
 
     btnCalc.addEventListener('click', handleCalculate);
 
-    // Also calculate on Enter key in any input
-    const inputs = document.querySelectorAll('#page-content input');
-    inputs.forEach(inp => {
-        inp.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') handleCalculate();
+    // Add Plate button
+    const btnAddPlate = document.getElementById('btn-add-plate');
+    if (btnAddPlate) {
+        btnAddPlate.addEventListener('click', handleAddPlate);
+    }
+
+    // Delegate remove-plate clicks on the container
+    const platesContainer = document.getElementById('plates-container');
+    if (platesContainer) {
+        platesContainer.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('[data-remove-plate]');
+            if (removeBtn) handleRemovePlate(removeBtn);
         });
+        // Live summary update on input change
+        platesContainer.addEventListener('input', updatePlatesSummary);
+    }
+
+    // Also calculate on Enter key in any input
+    document.getElementById('page-content')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.matches('input')) handleCalculate();
     });
+
+    // Initial state: hide remove btn if only 1 plate
+    updatePlateRemoveButtons();
+    updatePlatesSummary();
+}
+
+/** Add a new plate row */
+function handleAddPlate() {
+    const container = document.getElementById('plates-container');
+    if (!container) return;
+    const plateCount = container.querySelectorAll('.plate-item').length + 1;
+    const html = createPlateHTML(plateCount);
+    container.insertAdjacentHTML('beforeend', html);
+    updatePlateRemoveButtons();
+    updatePlatesSummary();
+
+    // Animate the new plate in
+    const newPlate = container.querySelector('.plate-item:last-child');
+    if (newPlate) {
+        newPlate.style.animation = 'fadeInUp 0.35s ease';
+    }
+}
+
+/** Remove a plate row */
+function handleRemovePlate(btn) {
+    const container = document.getElementById('plates-container');
+    if (!container) return;
+    const plates = container.querySelectorAll('.plate-item');
+    if (plates.length <= 1) {
+        showToast('⚠️ ต้องมีอย่างน้อย 1 Plate');
+        return;
+    }
+    const plateId = btn.dataset.removePlate;
+    const plateEl = container.querySelector(`.plate-item[data-plate-id="${plateId}"]`);
+    if (plateEl) {
+        plateEl.style.animation = 'fadeOut 0.25s ease forwards';
+        setTimeout(() => {
+            plateEl.remove();
+            renumberPlates();
+            updatePlateRemoveButtons();
+            updatePlatesSummary();
+        }, 250);
+    }
+}
+
+/** Renumber plate labels sequentially */
+function renumberPlates() {
+    const container = document.getElementById('plates-container');
+    if (!container) return;
+    const plates = container.querySelectorAll('.plate-item');
+    plates.forEach((plate, i) => {
+        const label = plate.querySelector('.plate-label');
+        if (label) label.textContent = `🖨️ Plate ${i + 1}`;
+    });
+}
+
+/** Show/hide remove buttons when only 1 plate exists */
+function updatePlateRemoveButtons() {
+    const container = document.getElementById('plates-container');
+    if (!container) return;
+    const plates = container.querySelectorAll('.plate-item');
+    const removeBtns = container.querySelectorAll('.btn-plate-remove');
+    removeBtns.forEach(btn => {
+        btn.style.display = plates.length <= 1 ? 'none' : '';
+    });
+}
+
+/** Update the summary bar showing totals across plates */
+function updatePlatesSummary() {
+    const container = document.getElementById('plates-container');
+    const summaryEl = document.getElementById('plates-summary');
+    if (!container || !summaryEl) return;
+
+    const plates = container.querySelectorAll('.plate-item');
+    if (plates.length <= 1) {
+        summaryEl.style.display = 'none';
+        return;
+    }
+
+    let totalWeight = 0;
+    let totalHours = 0;
+    let totalMinutes = 0;
+
+    plates.forEach(plate => {
+        totalWeight += parseFloat(plate.querySelector('.plate-weight')?.value) || 0;
+        totalHours += parseInt(plate.querySelector('.plate-time-h')?.value) || 0;
+        totalMinutes += parseInt(plate.querySelector('.plate-time-m')?.value) || 0;
+    });
+
+    // Normalize minutes into hours
+    totalHours += Math.floor(totalMinutes / 60);
+    totalMinutes = totalMinutes % 60;
+
+    const timeStr = `${totalHours}h ${totalMinutes}m`;
+
+    summaryEl.style.display = 'flex';
+    summaryEl.innerHTML = `
+        <span>📊 รวม ${plates.length} Plates</span>
+        <span class="plates-summary-divider">|</span>
+        <span>⚖️ ${totalWeight.toFixed(1)}g</span>
+        <span class="plates-summary-divider">|</span>
+        <span>⏱️ ${timeStr}</span>
+    `;
+}
+
+/** Read all plate inputs and sum them */
+function collectPlateData() {
+    const container = document.getElementById('plates-container');
+    if (!container) return { weightGrams: 0, printTimeHours: 0 };
+
+    let totalWeight = 0;
+    let totalMinutes = 0;
+
+    container.querySelectorAll('.plate-item').forEach(plate => {
+        totalWeight += parseFloat(plate.querySelector('.plate-weight')?.value) || 0;
+        const h = parseInt(plate.querySelector('.plate-time-h')?.value) || 0;
+        const m = parseInt(plate.querySelector('.plate-time-m')?.value) || 0;
+        totalMinutes += (h * 60) + m;
+    });
+
+    return {
+        weightGrams: totalWeight,
+        printTimeHours: totalMinutes / 60,
+    };
 }
 
 function handleCalculate() {
     const settings = loadSettings();
 
     const filamentId = document.getElementById('inp-filament').value;
-    const weightGrams = parseFloat(document.getElementById('inp-weight').value) || 0;
-    const printTimeHours = parseFloat(document.getElementById('inp-time').value) || 0;
+    const { weightGrams, printTimeHours } = collectPlateData();
     const quantity = parseInt(document.getElementById('inp-quantity').value) || 1;
     const modelingHours = parseFloat(document.getElementById('inp-modeling').value) || 0;
     const slicingMinutes = parseFloat(document.getElementById('inp-slicing').value) || 0;
     const postProcessHours = parseFloat(document.getElementById('inp-postprocess').value) || 0;
 
     if (weightGrams <= 0 || printTimeHours <= 0) {
-        showToast('⚠️ กรุณากรอกน้ำหนักและเวลาปริ้น');
+        showToast('⚠️ กรุณากรอกน้ำหนักและเวลาปริ้นอย่างน้อย 1 Plate');
         return;
     }
 
